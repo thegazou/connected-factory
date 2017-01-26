@@ -110,6 +110,14 @@ def test_server_event():
     print("Stop listening for Server Event!")
     time.sleep(1)
 
+def test_get_history():
+    print("\nTest of the historical access feature:###################\n")
+    temp_sensor = robot.get_child(["2:TempSensor"])
+
+
+    print(temp_sensor.read_event_history(starttime=None, endtime=None, numvalues=10))
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.WARN)
     logger = logging.getLogger("KeepAlive")
@@ -121,12 +129,13 @@ if __name__ == "__main__":
     print("Connected to my custom Opc Ua Server")
 
     try:
+        #test_get_history()
         test_write_variable()
         test_write_unwritable_variable()
         test_subscription()
         test_function()
         test_server_event()
 
-        # embed()
+        embed()
     finally:
         client.disconnect()

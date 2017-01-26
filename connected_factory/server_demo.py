@@ -1,6 +1,7 @@
 import sys
 import time
 from opcua import ua, Server, uamethod
+from opcua.server.history_sql import HistorySQLite
 sys.path.insert(0, "..")
 
 
@@ -52,7 +53,11 @@ if __name__ == "__main__":
     trigger_event = robot.add_variable(idx, "Trigger Event", False)
     trigger_event.set_writable()
 
+    server.iserver.history_manager.set_storage(HistorySQLite("temp_sensor_history.sql"))
+
+
     server.start()
+    server.historize_node_data_change(temp_sensor, period=None, count=100)
     try:
         count = 0
         while True:
