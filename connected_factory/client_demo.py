@@ -37,38 +37,6 @@ class ServerEventSubHandler(object):
                   .format(event.SourceName, event.Message, event.PowerLevel))
 
 
-def test_subscription():
-    print("\nTest of the subscription feature:###################\n")
-    print("The Temperature of the robot is {0:3.1f}°.".format(robot.get_child(["2:TempSensor"]).get_value()))
-    time.sleep(1)
-    print("Start listening for Temperature changes!")
-    handler = TemperatureSubHandler()
-    sub = client.create_subscription(1, handler)
-    handle = sub.subscribe_data_change(root.get_child(["0:Objects", "2:Robot1", "2:TempSensor"]))
-    i = 0
-    while i < 3:
-        time.sleep(1)
-        i += 1
-    sub.unsubscribe(handle)
-    print("Stop listening for Temperature changes!")
-    time.sleep(1)
-
-
-def test_function():
-    print("\nTest of the call function feature:###################\n")
-    robot_arm_x = robot.get_child(["2:Arm X coordinate"])
-    robot_arm_y = robot.get_child(["2:Arm Y coordinate"])
-    print("The x coordinate of the robot's arm is {0:3.1f}".format(robot_arm_x.get_value()))
-    print("The y coordinate of the robot's arm is {0:3.1f}".format(robot_arm_y.get_value()))
-
-    x = 40.0
-    y = 55.1
-    print("Attempting to move the arm to coordinates({0}, {1}).".format(x, y))
-    robot.call_method("2:move_arm", x, y)
-    print("The x coordinate of the robot's arm is now {0:3.1f}".format(robot_arm_x.get_value()))
-    print("The y coordinate of the robot's arm is now {0:3.1f}".format(robot_arm_y.get_value()))
-
-
 def test_write_variable():
     print("\nTest of the updating variable feature:###################\n")
     arm_speed = robot.get_child(["2:Arm speed"])
@@ -92,6 +60,48 @@ def test_write_unwritable_variable():
         print("ERROR:",error)
 
 
+def test_subscription():
+    print("\nTest of the subscription feature:###################\n")
+    print("The Temperature of the robot is {0:3.1f}°.".format(robot.get_child(["2:TempSensor"]).get_value()))
+    time.sleep(1)
+    print("Start listening for Temperature changes!")
+    handler = TemperatureSubHandler()
+    sub = client.create_subscription(1, handler)
+    handle = sub.subscribe_data_change(root.get_child(["0:Objects", "2:Robot1", "2:TempSensor"]))
+    i = 0
+    while i < 3:
+        time.sleep(1)
+        i += 1
+    sub.unsubscribe(handle)
+    print("Stop listening for Temperature changes!")
+    time.sleep(1)
+
+
+def test_get_history():
+    print("\nTest of the historical access feature:###################\n")
+    temp_sensor = robot.get_child(["2:TempSensor"])
+
+    print("Pulling the last 5 records of the robot's temperature sensor:")
+    history = temp_sensor.read_raw_history(numvalues=5)
+    for temp in reversed(history):
+        print("Temperature at {0} was {1:3.1f}°.".format(str(temp.SourceTimestamp)
+                                                         .split(' ')[1].split('.')[0], temp.Value.Value))
+
+
+def test_function():
+    print("\nTest of the call function feature:###################\n")
+    robot_arm_x = robot.get_child(["2:Arm X coordinate"])
+    robot_arm_y = robot.get_child(["2:Arm Y coordinate"])
+    print("The x coordinate of the robot's arm is {0:3.1f}".format(robot_arm_x.get_value()))
+    print("The y coordinate of the robot's arm is {0:3.1f}".format(robot_arm_y.get_value()))
+    x = 40.0
+    y = 55.1
+    print("Attempting to move the arm to coordinates({0}, {1}).".format(x, y))
+    robot.call_method("2:move_arm", x, y)
+    print("The x coordinate of the robot's arm is now {0:3.1f}".format(robot_arm_x.get_value()))
+    print("The y coordinate of the robot's arm is now {0:3.1f}".format(robot_arm_y.get_value()))
+
+
 def test_server_event():
     print("\nTest of the server event feature:###################\n")
     low_power_event = root.get_child(["0:Types", "0:EventTypes", "0:BaseEventType", "2:Low Power Event"])
@@ -110,32 +120,25 @@ def test_server_event():
     print("Stop listening for Server Event!")
     time.sleep(1)
 
-def test_get_history():
-    print("\nTest of the historical access feature:###################\n")
-    temp_sensor = robot.get_child(["2:TempSensor"])
-
-
-    print(temp_sensor.read_event_history(starttime=None, endtime=None, numvalues=10))
-
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.WARN)
     logger = logging.getLogger("KeepAlive")
     logger.setLevel(logging.DEBUG)
-    client = Client("opc.tcp://localhost:4840/freeopcua/server/")
+    client = Client("opc.tcp://localhost:4840/connected-factory/server/")
     client.connect()
     root = client.get_root_node()
     robot = root.get_child(["0:Objects", "2:Robot1"])
     print("Connected to my custom Opc Ua Server")
 
     try:
-        #test_get_history()
         test_write_variable()
         test_write_unwritable_variable()
         test_subscription()
+        test_get_history()
         test_function()
         test_server_event()
 
-        embed()
+        # embed()
     finally:
         client.disconnect()

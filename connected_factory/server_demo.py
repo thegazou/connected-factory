@@ -26,9 +26,9 @@ def test_event():
 if __name__ == "__main__":
 
     server = Server()
-    server.set_endpoint("opc.tcp://0.0.0.0:4840/freeopcua/server/")
+    server.set_endpoint("opc.tcp://0.0.0.0:4840/connected-factory/server/")
 
-    uri = "http://examples.freeopcua.github.io"
+    uri = "https://github.com/thegazou/connected-factory"
     idx = server.register_namespace(uri)
     objects = server.get_objects_node()
     robot = objects.add_object(idx, "Robot1")
