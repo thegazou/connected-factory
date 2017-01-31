@@ -3,13 +3,14 @@ import logging
 import time
 from opcua import Client
 from opcua import ua
-sys.path.insert(0, "..")
 
+sys.path.insert(0, "..")
 
 try:
     from IPython import embed
 except ImportError:
     import code
+
 
     def embed():
         vars = globals()
@@ -19,14 +20,12 @@ except ImportError:
 
 
 class TemperatureSubHandler(object):
-
     @staticmethod
     def datachange_notification(node, val, data):
         print("The Temperature of the robot is now {0:3.1f}°.".format(val))
 
 
 class ServerEventSubHandler(object):
-
     @staticmethod
     def event_notification(event):
         if event.IsInUse:
@@ -48,7 +47,7 @@ def test_write_variable():
 
 
 def test_write_unwritable_variable():
-    print("\nTest of the updating variable feature:###################\n")
+    print("\nTest of the protection variable feature:###################\n")
     arm_model = robot.get_child(["2:Arm model"])
     print("The robot's arm is a {0}.".format(arm_model.get_value()))
     new_model = "Mikron 2017"
@@ -57,7 +56,7 @@ def test_write_unwritable_variable():
         arm_model.set_value(new_model)
         print("The robot's arm is a {0}.".format(arm_model.get_value()))
     except ua.uaerrors._auto.BadUserAccessDenied as error:
-        print("ERROR:",error)
+        print("ERROR:", error)
 
 
 def test_subscription():
@@ -83,6 +82,7 @@ def test_get_history():
 
     print("Pulling the last 5 records of the robot's temperature sensor:")
     history = temp_sensor.read_raw_history(numvalues=5)
+    print(dir(history[0]))
     for temp in reversed(history):
         print("Temperature at {0} was {1:3.1f}°.".format(str(temp.SourceTimestamp)
                                                          .split(' ')[1].split('.')[0], temp.Value.Value))
@@ -121,6 +121,25 @@ def test_server_event():
     time.sleep(1)
 
 
+def test_real_function():
+    print("\nTest of a real application function:###################\n")
+    target_position = [32.1, 55.8]
+    print("Attempting to get an object at position ({0},{1}).".format(target_position[0], target_position[1]))
+    robot.call_method("2:move_arm", target_position[0], target_position[1])
+    result = robot.call_method("2:use_clamp")
+    if result is True:
+        print("An object has been caught!")
+    else:
+        print("Nothing has been found!")
+        return
+    print("Moving arm to his inital position")
+    initial_position = robot.get_child("2:Arm inital position").get_value()
+    if robot.call_method("2:move_arm", initial_position[0], initial_position[1]) is True:
+        print("Releasing object from the clamp")
+        robot.call_method("2:open_clamp")
+        print("The Operation is a succes!")
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.WARN)
     logger = logging.getLogger("KeepAlive")
@@ -132,12 +151,14 @@ if __name__ == "__main__":
     print("Connected to my custom Opc Ua Server")
 
     try:
+        test_real_function()
         test_write_variable()
         test_write_unwritable_variable()
         test_subscription()
         test_get_history()
         test_function()
         test_server_event()
+        test_real_function()
 
         # embed()
     finally:

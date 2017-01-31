@@ -2,17 +2,44 @@ import sys
 import time
 from opcua import ua, Server, uamethod
 from opcua.server.history_sql import HistorySQLite
+
 sys.path.insert(0, "..")
 
 
 @uamethod
 def move_arm(parent, x, y):
     print("\nMoving arm to coordinates ({0},{1}).".format(x, y))
-    arm_x_coord=robot.get_child(["2:Arm X coordinate"])
-    arm_y_coord=robot.get_child(["2:Arm Y coordinate"])
-    arm_x_coord.set_value(x)
-    arm_y_coord.set_value(y)
+    x_coord = robot.get_child(["2:Arm X coordinate"])
+    y_coord = robot.get_child(["2:Arm Y coordinate"])
+    x_coord.set_value(x)
+    y_coord.set_value(y)
     print("Arm in position!")
+    return True
+
+
+@uamethod
+def use_clamp(parent):
+    x = robot.get_child(["2:Arm X coordinate"]).get_value()
+    y = robot.get_child(["2:Arm Y coordinate"]).get_value()
+    print("\nAttempting to catch an object at coordinates ({0},{1}).".format(x, y))
+
+    # Simulating an object at coordinate (32.1, 55.8)
+    if x == 32.1 and y == 55.8:
+        clamp_resitance_sensor.set_value(100)
+
+    if clamp_resitance_sensor.get_value() >= 100:
+        arm_clamp.set_value(True)
+        print("An object has been catched by the clamp!")
+        return True
+    else:
+        print("Nothing is in the clamp!")
+        return False
+
+
+@uamethod
+def open_clamp(parent):
+    arm_clamp.set_value(False)
+    print("Oppening clamp!")
 
 
 def test_event():
@@ -42,9 +69,14 @@ if __name__ == "__main__":
     arm_speed = robot.add_variable(idx, "Arm speed", 10)
     arm_speed.set_writable()
     arm_model = robot.add_variable(idx, "Arm model", "Mikron 3")
+    arm_clamp = robot.add_variable(idx, "Arm Clamp", False)
+    clamp_resitance_sensor = arm_clamp.add_property(idx, "Resistance sensor", 0)
+    robot.add_method(idx, "use_clamp", use_clamp, [], [ua.VariantType.Boolean])
+    robot.add_method(idx, "open_clamp", open_clamp, [], [])
+    arm_initial_position = robot.add_property(idx, "Arm inital position", [3.2, 2.1])
 
-    multiply_node = robot.add_method(idx, "move_arm", move_arm,
-                                     [ua.VariantType.Int64, ua.VariantType.Int64], [ua.VariantType.Int64])
+    robot.add_method(idx, "move_arm", move_arm,
+                     [ua.VariantType.Double, ua.VariantType.Double], [ua.VariantType.Boolean])
     power_event = server.create_custom_event_type(2, 'Low Power Event', ua.ObjectIds.BaseEventType)
     power_event.add_property(1, 'Message', ua.Variant("Power is low!", ua.VariantType.String))
     power_event.add_property(2, 'PowerLevel', ua.Variant(15, ua.VariantType.Int32))
@@ -54,7 +86,6 @@ if __name__ == "__main__":
     trigger_event.set_writable()
 
     server.iserver.history_manager.set_storage(HistorySQLite("temp_sensor_history.sql"))
-
 
     server.start()
     server.historize_node_data_change(temp_sensor, period=None, count=100)
@@ -71,4 +102,3 @@ if __name__ == "__main__":
 
     finally:
         server.stop()
-
