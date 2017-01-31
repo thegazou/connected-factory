@@ -7,21 +7,34 @@ sys.path.insert(0, "..")
 
 
 @uamethod
+def move_arm_v(parent, coord):
+    return _move_arm(coord)
+
+
+@uamethod
 def move_arm(parent, x, y):
-    print("\nMoving arm to coordinates ({0},{1}).".format(x, y))
+    return _move_arm([x, y])
+
+
+def _move_arm(coord):
+    print("\nMoving arm to coordinates ({0},{1}).".format(coord[0], coord[1]))
     x_coord = robot.get_child(["2:Arm X coordinate"])
     y_coord = robot.get_child(["2:Arm Y coordinate"])
-    x_coord.set_value(x)
-    y_coord.set_value(y)
+    x_coord.set_value(coord[0])
+    y_coord.set_value(coord[1])
     print("Arm in position!")
     return True
 
 
 @uamethod
 def use_clamp(parent):
+    return _use_clamp()
+
+
+def _use_clamp():
     x = robot.get_child(["2:Arm X coordinate"]).get_value()
     y = robot.get_child(["2:Arm Y coordinate"]).get_value()
-    print("\nAttempting to catch an object at coordinates ({0},{1}).".format(x, y))
+    print("Attempting to catch an object at coordinates ({0},{1}).".format(x, y))
 
     # Simulating an object at coordinate (32.1, 55.8)
     if x == 32.1 and y == 55.8:
@@ -33,13 +46,32 @@ def use_clamp(parent):
         return True
     else:
         print("Nothing is in the clamp!")
+        move_arm(arm_idle_position.get_value)
         return False
 
 
 @uamethod
 def open_clamp(parent):
+    _open_clamp()
+
+
+def _open_clamp():
     arm_clamp.set_value(False)
     print("Oppening clamp!")
+
+
+@uamethod
+def grab_object(parent, source_coord, target_coord):
+    print("The grab_object function has been called!")
+    if _move_arm(source_coord) is not True:
+        return False
+    if _use_clamp() is not True:
+        _move_arm(arm_idle_position)
+        return False
+    if _move_arm(target_coord) is not True:
+        return False
+    _open_clamp()
+    return _move_arm(arm_idle_position.get_value())
 
 
 def test_event():
@@ -73,10 +105,22 @@ if __name__ == "__main__":
     clamp_resitance_sensor = arm_clamp.add_property(idx, "Resistance sensor", 0)
     robot.add_method(idx, "use_clamp", use_clamp, [], [ua.VariantType.Boolean])
     robot.add_method(idx, "open_clamp", open_clamp, [], [])
-    arm_initial_position = robot.add_property(idx, "Arm inital position", [3.2, 2.1])
+    arm_idle_position = robot.add_property(idx, "Arm idle position", [3.2, 2.1])
 
+    inargx = ua.Argument()
+    inargx.Name = "vec2"
+    inargx.DataType = ua.NodeId(ua.ObjectIds.Double)
+    inargx.ValueRank = -1
+    inargx.ArrayDimensions = []
+    inargx.Description = ua.LocalizedText("List contenant les coordonnées de la cible")
+    robot.add_method(idx, "move_arm_v", move_arm_v,
+                     [inargx], [ua.VariantType.Boolean])
     robot.add_method(idx, "move_arm", move_arm,
                      [ua.VariantType.Double, ua.VariantType.Double], [ua.VariantType.Boolean])
+
+    robot.add_method(idx, "grab_object", grab_object,
+                     [ua.VariantType.Double, ua.VariantType.Double], [ua.VariantType.Boolean])
+
     power_event = server.create_custom_event_type(2, 'Low Power Event', ua.ObjectIds.BaseEventType)
     power_event.add_property(1, 'Message', ua.Variant("Power is low!", ua.VariantType.String))
     power_event.add_property(2, 'PowerLevel', ua.Variant(15, ua.VariantType.Int32))

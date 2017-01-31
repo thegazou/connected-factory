@@ -121,23 +121,52 @@ def test_server_event():
     time.sleep(1)
 
 
-def test_real_function():
-    print("\nTest of a real application function:###################\n")
-    target_position = [32.1, 55.8]
-    print("Attempting to get an object at position ({0},{1}).".format(target_position[0], target_position[1]))
-    robot.call_method("2:move_arm", target_position[0], target_position[1])
-    result = robot.call_method("2:use_clamp")
-    if result is True:
-        print("An object has been caught!")
-    else:
+def grab_object(source_coord, target_coord):
+    print("Moving the arm to the object...", end='')
+    if robot.call_method("2:move_arm_v", source_coord) is not True:
+        return False
+    print(" done.")
+    print("Attempting to catch an object...", end='')
+    if robot.call_method("2:use_clamp") is not True:
         print("Nothing has been found!")
+        return False
+    print("An object has been caught!")
+    print("Moving to the arm to the bin...", end='')
+    if robot.call_method("2:move_arm_v", target_coord) is not True:
+        return False
+    print(" done.")
+    print("Releasing object into the bin...", end='')
+    robot.call_method("2:open_clamp")
+    print(" done.")
+    print("Moving the arm to his idle position...", end='')
+    if robot.call_method("2:move_arm_v", robot.get_child("2:Arm idle position").get_value()) is not True:
+        return False
+    print(" done.")
+    return True
+
+
+def test_grab_function_client_side():
+    print("\nTest of the grab function client side:###################\n")
+    source_coord = [32.1, 55.8]
+    target_coord = [6.0, 8.0]
+    print("Attempting to get an object at position ({0},{1}).".format(source_coord[0], source_coord[1]), end='')
+    print("and put it in the bin at position ({0},{1}).\n".format(target_coord[0], target_coord[1]))
+    if grab_object(source_coord, target_coord) is not True:
+        print("\nThe operation has failed!")
         return
-    print("Moving arm to his inital position")
-    initial_position = robot.get_child("2:Arm inital position").get_value()
-    if robot.call_method("2:move_arm", initial_position[0], initial_position[1]) is True:
-        print("Releasing object from the clamp")
-        robot.call_method("2:open_clamp")
-        print("The Operation is a succes!")
+    print("\nThe operation is a success!")
+
+
+def test_grab_function_server_side():
+    print("\nTest of the grab function server side:###################\n")
+    source_coord = [32.1, 55.8]
+    target_coord = [6.0, 8.0]
+    print("Attempting to get an object at position ({0},{1}).".format(source_coord[0], source_coord[1]), end='')
+    print("and put it in the bin at position ({0},{1}).\n".format(target_coord[0], target_coord[1]))
+    if robot.call_method("2:grab_object", source_coord, target_coord) is not True:
+        print("The operation has failed!")
+        return
+    print("The operation is a success!")
 
 
 if __name__ == "__main__":
@@ -151,14 +180,14 @@ if __name__ == "__main__":
     print("Connected to my custom Opc Ua Server")
 
     try:
-        test_real_function()
         test_write_variable()
         test_write_unwritable_variable()
         test_subscription()
         test_get_history()
         test_function()
         test_server_event()
-        test_real_function()
+        test_grab_function_client_side()
+        test_grab_function_server_side()
 
         # embed()
     finally:
