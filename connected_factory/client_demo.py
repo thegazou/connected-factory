@@ -40,7 +40,7 @@ def test_write_variable():
     print("\nTest of the updating variable feature:###################\n")
     arm_speed = robot.get_child(["2:Arm speed"])
     print("The speed of the robot's arm is {0}m/s.".format(arm_speed.get_value()))
-    new_speed = 15
+    new_speed = 50
     print("Attempting to modify the speed to {0}m/s.".format(new_speed))
     arm_speed.set_value(new_speed)
     print("The speed of the robot's arm is now {0}m/s.".format(arm_speed.get_value()))
@@ -94,12 +94,13 @@ def test_function():
     robot_arm_y = robot.get_child(["2:Arm Y coordinate"])
     print("The x coordinate of the robot's arm is {0:3.1f}".format(robot_arm_x.get_value()))
     print("The y coordinate of the robot's arm is {0:3.1f}".format(robot_arm_y.get_value()))
-    x = 40.0
-    y = 55.1
-    print("Attempting to move the arm to coordinates({0}, {1}).".format(x, y))
+    x = 20.0
+    y = 12.1
+    print("Attempting to move the arm to coordinates({0}, {1})...".format(x, y), end='')
     robot.call_method("2:move_arm", x, y)
-    print("The x coordinate of the robot's arm is now {0:3.1f}".format(robot_arm_x.get_value()))
-    print("The y coordinate of the robot's arm is now {0:3.1f}".format(robot_arm_y.get_value()))
+    print("Done!")
+    print("The new x coordinate of the robot's arm is {0:3.1f}".format(robot_arm_x.get_value()))
+    print("The y coordinate of the robot's arm is {0:3.1f}".format(robot_arm_y.get_value()))
 
 
 def test_server_event():
@@ -125,7 +126,7 @@ def grab_object(source_coord, target_coord):
     print("Moving the arm to the object...", end='')
     if robot.call_method("2:move_arm_v", source_coord) is not True:
         return False
-    print(" done.")
+    print("Done.")
     print("Attempting to catch an object...", end='')
     if robot.call_method("2:use_clamp") is not True:
         print("Nothing has been found!")
@@ -134,20 +135,20 @@ def grab_object(source_coord, target_coord):
     print("Moving to the arm to the bin...", end='')
     if robot.call_method("2:move_arm_v", target_coord) is not True:
         return False
-    print(" done.")
+    print("Done.")
     print("Releasing object into the bin...", end='')
     robot.call_method("2:open_clamp")
-    print(" done.")
+    print("Done.")
     print("Moving the arm to his idle position...", end='')
     if robot.call_method("2:move_arm_v", robot.get_child("2:Arm idle position").get_value()) is not True:
         return False
-    print(" done.")
+    print("Done.")
     return True
 
 
 def test_grab_function_client_side():
     print("\nTest of the grab function client side:###################\n")
-    source_coord = [32.1, 55.8]
+    source_coord = [15.2, 13.0]
     target_coord = [6.0, 8.0]
     print("Attempting to get an object at position ({0},{1}).".format(source_coord[0], source_coord[1]), end='')
     print("and put it in the bin at position ({0},{1}).\n".format(target_coord[0], target_coord[1]))
@@ -159,7 +160,7 @@ def test_grab_function_client_side():
 
 def test_grab_function_server_side():
     print("\nTest of the grab function server side:###################\n")
-    source_coord = [32.1, 55.8]
+    source_coord = [15.2, 13.0]
     target_coord = [6.0, 8.0]
     print("Attempting to get an object at position ({0},{1}).".format(source_coord[0], source_coord[1]), end='')
     print("and put it in the bin at position ({0},{1}).\n".format(target_coord[0], target_coord[1]))

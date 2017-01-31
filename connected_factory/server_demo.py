@@ -16,13 +16,21 @@ def move_arm(parent, x, y):
     return _move_arm([x, y])
 
 
+def estimate_arm_travel_time(coord):
+    x0 = robot.get_child(["2:Arm X coordinate"]).get_value()
+    y0 = robot.get_child(["2:Arm Y coordinate"]).get_value()
+    dist = (abs(coord[0]-x0)**2+(abs(coord[1]-y0)**2)**0.5)
+    return dist/arm_speed.get_value()
+
+
 def _move_arm(coord):
-    print("\nMoving arm to coordinates ({0},{1}).".format(coord[0], coord[1]))
+    print("\nMoving arm to coordinates ({0},{1})...".format(coord[0], coord[1]), end='')
     x_coord = robot.get_child(["2:Arm X coordinate"])
     y_coord = robot.get_child(["2:Arm Y coordinate"])
+    time.sleep(estimate_arm_travel_time(coord))
     x_coord.set_value(coord[0])
     y_coord.set_value(coord[1])
-    print("Arm in position!")
+    print("Done!")
     return True
 
 
@@ -36,8 +44,8 @@ def _use_clamp():
     y = robot.get_child(["2:Arm Y coordinate"]).get_value()
     print("Attempting to catch an object at coordinates ({0},{1}).".format(x, y))
 
-    # Simulating an object at coordinate (32.1, 55.8)
-    if x == 32.1 and y == 55.8:
+    # Simulating an object at coordinate (15.2, 13.0)
+    if x == 15.2 and y == 13.0:
         clamp_resitance_sensor.set_value(100)
 
     if clamp_resitance_sensor.get_value() >= 100:
@@ -98,14 +106,14 @@ if __name__ == "__main__":
     arm_x_coord.set_writable()
     arm_y_coord = robot.add_variable(idx, "Arm Y coordinate", 15.4)
     arm_y_coord.set_writable()
-    arm_speed = robot.add_variable(idx, "Arm speed", 10)
+    arm_speed = robot.add_variable(idx, "Arm speed", 45)
     arm_speed.set_writable()
     arm_model = robot.add_variable(idx, "Arm model", "Mikron 3")
     arm_clamp = robot.add_variable(idx, "Arm Clamp", False)
     clamp_resitance_sensor = arm_clamp.add_property(idx, "Resistance sensor", 0)
     robot.add_method(idx, "use_clamp", use_clamp, [], [ua.VariantType.Boolean])
     robot.add_method(idx, "open_clamp", open_clamp, [], [])
-    arm_idle_position = robot.add_property(idx, "Arm idle position", [3.2, 2.1])
+    arm_idle_position = robot.add_property(idx, "Arm idle position", [10, 10])
 
     inargx = ua.Argument()
     inargx.Name = "vec2"
