@@ -44,8 +44,8 @@ def _use_clamp():
     y = robot.get_child(["2:Arm Y coordinate"]).get_value()
     print("Attempting to catch an object at coordinates ({0},{1}).".format(x, y))
 
-    # Simulating an object at coordinate (15.2, 13.0)
-    if x == 15.2 and y == 13.0:
+    # Simulating an object at coordinate (12,13)
+    if x == 12 and y == 13:
         clamp_resitance_sensor.set_value(100)
 
     if clamp_resitance_sensor.get_value() >= 100:
@@ -65,21 +65,34 @@ def open_clamp(parent):
 
 def _open_clamp():
     arm_clamp.set_value(False)
-    print("Oppening clamp!")
+    clamp_resitance_sensor.set_value(0)
+    print("Clamp open!")
 
 
 @uamethod
 def grab_object(parent, source_coord, target_coord):
     print("The grab_object function has been called!")
     if _move_arm(source_coord) is not True:
-        return False
+        return fail()
     if _use_clamp() is not True:
         _move_arm(arm_idle_position)
-        return False
+        return fail()
     if _move_arm(target_coord) is not True:
-        return False
+        return fail()
     _open_clamp()
-    return _move_arm(arm_idle_position.get_value())
+    if _move_arm(arm_idle_position.get_value()) is not True:
+        return fail()
+    return succes()
+
+
+def succes():
+    print("The operation is a succes!")
+    return True
+
+
+def fail():
+    print("The operation has failed!")
+    return False
 
 
 def test_event():
@@ -142,11 +155,11 @@ if __name__ == "__main__":
     server.start()
     server.historize_node_data_change(temp_sensor, period=None, count=100)
     try:
-        count = 0
+        simulated_temperature = temp_sensor.get_value()
         while True:
             time.sleep(1)
-            count += 0.1
-            temp_sensor.set_value(count)
+            simulated_temperature += 0.1
+            temp_sensor.set_value(simulated_temperature)
 
             if trigger_event.get_value():
                 test_event()
