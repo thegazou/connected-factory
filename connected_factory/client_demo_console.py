@@ -197,10 +197,6 @@ if __name__ == "__main__":
     print("Connected to my custom Opc Ua Server")
 
     try:
-        test_grab_function_client_side()
-        time.sleep(2)
-        test_grab_function_server_side()
-
-        # embed()
+        embed()
     finally:
         client.disconnect()

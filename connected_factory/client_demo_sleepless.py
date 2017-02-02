@@ -36,11 +36,6 @@ class ServerEventSubHandler(object):
                   .format(event.SourceName, event.Message, event.PowerLevel))
 
 
-def fail():
-    print("The operation has failed!")
-    return False
-
-
 def test_write_variable():
     print("\nTest of the updating variable feature:##################\n")
     arm_speed = robot.get_child(["2:Arm speed"])
@@ -48,7 +43,6 @@ def test_write_variable():
     new_speed = 50
     print("Modifying the speed to {0}m/s.\n".format(new_speed))
     arm_speed.set_value(new_speed)
-    time.sleep(1)
     print("Reading the new value of the node:")
     print("The speed of the robot's arm is now {0}m/s.".format(arm_speed.get_value()))
     print("\n######################Fin du test#######################\n")
@@ -60,7 +54,6 @@ def test_write_unwritable_variable():
     print("The robot's arm is a {0}.\n".format(arm_model.get_value()))
     new_model = "Mikron 2017"
     print("Attempting to modify the model of the arm to {0}.\n".format(new_model))
-    time.sleep(1)
     try:
         arm_model.set_value(new_model)
         print("The robot's arm is a {0}.".format(arm_model.get_value()))
@@ -72,18 +65,15 @@ def test_write_unwritable_variable():
 def test_subscription():
     print("\nTest of the subscription feature:#######################\n")
     print("The Temperature of the robot is {0:3.1f}°.\n".format(robot.get_child(["2:TempSensor"]).get_value()))
-    time.sleep(1)
     print("Start listening for Temperature changes!\n")
     handler = TemperatureSubHandler()
     sub = client.create_subscription(1, handler)
     handle = sub.subscribe_data_change(root.get_child(["0:Objects", "2:Robot1", "2:TempSensor"]))
     i = 0
     while i < 3:
-        time.sleep(1)
         i += 1
     sub.unsubscribe(handle)
     print("\nStop listening for Temperature changes!")
-    time.sleep(1)
     print("\n######################Fin du test#######################\n")
 
 
@@ -125,37 +115,34 @@ def test_server_event():
     handle = sub.subscribe_events(robot, low_power_event)
     trigger_server_event = robot.get_child(["2:Trigger Event"])
     trigger_server_event.set_value(True)
-    time.sleep(1)
     i = 0
     while i < 2:
-        time.sleep(1)
         i += 1
     sub.unsubscribe(handle)
     print("\nStop listening for Server Event!")
-    time.sleep(1)
     print("\n######################Fin du test########################\n")
 
 
 def grab_object(source_coord, target_coord):
     print("Moving the arm to the object...", end='')
     if robot.call_method("2:move_arm_v", source_coord) is not True:
-        return fail()
+        return False
     print("Done.")
     print("Attempting to catch an object...", end='')
     if robot.call_method("2:use_clamp") is not True:
         print("Nothing has been found!")
-        return fail()
+        return False
     print("An object has been caught!")
     print("Moving to the arm to the bin...", end='')
     if robot.call_method("2:move_arm_v", target_coord) is not True:
-        return fail()
+        return False
     print("Done.")
     print("Releasing object into the bin...", end='')
     robot.call_method("2:open_clamp")
     print("Done.")
     print("Moving the arm to his idle position...", end='')
     if robot.call_method("2:move_arm_v", robot.get_child("2:Arm idle position").get_value()) is not True:
-        return fail()
+        return False
     print("Done.")
     return True
 
@@ -197,8 +184,13 @@ if __name__ == "__main__":
     print("Connected to my custom Opc Ua Server")
 
     try:
+        test_write_variable()
+        test_write_unwritable_variable()
+        test_subscription()
+        test_get_history()
+        test_function()
+        test_server_event()
         test_grab_function_client_side()
-        time.sleep(2)
         test_grab_function_server_side()
 
         # embed()
